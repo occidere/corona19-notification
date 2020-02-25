@@ -25,7 +25,7 @@ class Corona19Status:
 
 
 def get_bs(url: str, encoding: str = 'utf-8') -> BeautifulSoup:
-    req = get(url=url)
+    req = get(url=url, headers={'User-Agent': 'Mozilla/5.0'})
     req.encoding = encoding
     return BeautifulSoup(markup=req.text, features='html.parser')
 
@@ -57,7 +57,7 @@ def parse_sbs() -> [Corona19Status, None]:
 # 보건복지부
 def parse_mohw() -> [Corona19Status, None]:
     bs = get_bs(url='http://ncov.mohw.go.kr/index_main.jsp')
-    corona19 = Corona19Status(source='보건복지부')
+    corona19 = Corona19Status(source='보건복지부 코로나바이러스감염증-19 현황')
 
     try:
         co_cur = bs.find(name='div', attrs={'class': 'co_cur'})
