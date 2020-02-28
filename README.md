@@ -27,7 +27,8 @@
 <br>
 
 ## 예시
-![image](https://user-images.githubusercontent.com/20942871/75239973-f152b980-5806-11ea-940d-eeb94168f004.png)
+![image](https://user-images.githubusercontent.com/20942871/75522755-108f5800-5a4e-11ea-856e-65d0a6691df2.png)
+
 
 <br>
 
