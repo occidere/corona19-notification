@@ -1,3 +1,6 @@
+from argparse import ArgumentParser
+import os
+import pickle
 import re
 from datetime import datetime
 from typing import *
@@ -13,15 +16,54 @@ class Corona19Status:
     def __init__(self, source: str):
         self.source: str = source
         self.infected = 0
+        self.infected_delta = 0
         self.released = 0
+        self.released_delta = 0
         self.dead = 0
+        self.dead_delta = 0
         self.extras: Dict[str, int] = {}
 
-    # ex) 감염=5,격리해제=3,사망=2,추가정보={'신천지관련': 2},출처=occidere news
+    # ex) 감염=5(+1),격리해제=3(+1),사망=2(-0),추가정보={'신천지관련': 2},출처=occidere news
     def __str__(self):
-        return '감염=%d,격리해제=%d,사망=%d%s출처=%s' % (
-            self.infected, self.released, self.dead, ',추가정보={},'.format(self.extras) if self.extras else '', self.source
-        )
+        return '감염=%d({}%d),격리해제=%d({}%d),사망=%d({}%d)%s출처=%s'.format(
+            '+' if self.infected_delta > 0 else '-',
+            '+' if self.released_delta > 0 else '-',
+            '+' if self.dead_delta > 0 else '-'
+        ) % (
+                   self.infected,
+                   abs(self.infected_delta),
+                   self.released,
+                   abs(self.released_delta),
+                   self.dead,
+                   abs(self.dead_delta),
+                   ',추가정보={},'.format(self.extras) if self.extras else '', self.source
+               )
+
+
+class Corona19DB:
+    def __init__(self, db_path: str = 'corona19status.db'):
+        self.db_path = db_path
+
+    def read(self) -> [Corona19Status, None]:
+        try:
+            db_corona19 = Corona19Status(source='db')
+            if os.path.exists(self.db_path):
+                with open(file=self.db_path, mode='rb') as f:
+                    db_corona19: Corona19Status = pickle.load(f)
+                    db_corona19.source = 'db'
+                    db_corona19.infected = db_corona19.infected
+                    db_corona19.released = db_corona19.released
+                    db_corona19.dead = db_corona19.dead
+            return db_corona19
+        except Exception as e:
+            print('[{}] {}'.format(datetime.now(), e))
+            return None
+
+    def save(self, corona19_status: Corona19Status) -> None:
+        try:
+            pickle.dump(corona19_status, open(self.db_path, 'wb'))
+        except Exception as e:
+            print('[{}] {}'.format(datetime.now(), e))
 
 
 def get_bs(url: str, encoding: str = 'utf-8') -> BeautifulSoup:
@@ -126,12 +168,40 @@ def merge(status_list: List[Corona19Status]) -> Corona19Status:
     return merged
 
 
+def apply_diff(corona19: Corona19Status, db_corona19: Corona19Status) -> bool:
+    changed = False
+
+    if corona19.infected != db_corona19.infected:
+        changed = True
+        corona19.infected_delta = corona19.infected - db_corona19.infected
+    if corona19.released != db_corona19.released:
+        changed = True
+        corona19.released_delta = corona19.released - db_corona19.released
+    if corona19.dead != db_corona19.dead:
+        changed = True
+        corona19.dead_delta = corona19.dead - db_corona19.dead
+
+    # TODO extras 비교 필요
+
+    return changed
+
+
 def build_message(status: Corona19Status) -> str:
     msg = '''[코로나-19 현황]
-- 확진자: {} 명
-- 격리해제: {} 명
-- 사망: {} 명
-'''.format(status.infected, status.released, status.dead)
+- 확진자: {} 명 ({}{})
+- 격리해제: {} 명 ({}{})
+- 사망: {} 명 ({}{})
+'''.format(
+        status.infected,
+        '+' if status.infected_delta > 0 else '-',
+        abs(status.infected_delta),
+        status.released,
+        '+' if status.released_delta > 0 else '-',
+        abs(status.released_delta),
+        status.dead,
+        '+' if status.dead_delta > 0 else '-',
+        abs(status.dead_delta)
+    )
 
     for k, v in status.extras.items():
         msg += '- {}: {} 명\n'.format(k, v)
@@ -152,11 +222,34 @@ def send_line_broadcast_message(msg: str) -> bool:
 
 
 if __name__ == '__main__':
+    parser = ArgumentParser('Messenger notification control.')
+    parser.add_argument('--force-alert', dest='force_alert', action='store_true', help='이 옵션을 추가하면 강제로 알람을 전송함')
+    parser.add_argument('--db-path', dest='db_path', default='corona19status.db', help='코로나 감염 현황을 관리할 file db 를 지정함')
+    args = parser.parse_args()
+
+    force_alert = args.force_alert
+    db_path = args.db_path
+
+    print('[{}] Force alert: {}'.format(datetime.now(), force_alert))
+    print('[{}] db path: {}'.format(datetime.now(), db_path))
+
     merged_status = merge([parse_naver(), parse_mohw(), parse_sbs()])
-    print('[{}] {}'.format(datetime.now(), merged_status))
+    print('[{}] MERGED: {}'.format(datetime.now(), merged_status))
 
-    message = build_message(merged_status)
-    print('[{}] {}'.format(datetime.now(), message))
+    db = Corona19DB(db_path=db_path)
+    db_status = db.read()
+    print('[{}] DB: {}'.format(datetime.now(), db_status))
 
-    send_result = send_line_broadcast_message(message)
-    print('[{}] {}'.format(datetime.now(), send_result))
+    changed_status = apply_diff(corona19=merged_status, db_corona19=db_status)
+
+    db.save(corona19_status=merged_status)
+    print('[{}] DB 저장 완료 => {}'.format(datetime.now(), merged_status))
+
+    if changed_status or force_alert:
+        message = build_message(merged_status)
+        print('[{}] {}'.format(datetime.now(), message))
+
+        send_result = send_line_broadcast_message(message)
+        print('[{}] {}'.format(datetime.now(), send_result))
+    else:
+        print('[{}] 변경사항이 없으므로 알림 skip'.format(datetime.now()))
