@@ -98,19 +98,27 @@ def parse_sbs() -> [Corona19Status, None]:
 
 # 보건복지부
 def parse_mohw() -> [Corona19Status, None]:
-    bs = get_bs(url='http://ncov.mohw.go.kr/index_main.jsp')
+    bs = get_bs(url='http://ncov.mohw.go.kr/')
     corona19 = Corona19Status(source='보건복지부 코로나바이러스감염증-19 현황')
 
     try:
-        co_cur = bs.find(name='div', attrs={'class': 'co_cur'})
-        for li in co_cur.find_all(name='li'):
-            title = li.find(name='span', attrs={'class': 'tit'}).text.strip()
-            count = int(re.sub(pattern='[^0-9]', repl='', string=li.find(name='a', attrs={'class', 'num'}).text))
-            if '확진환자수' == title:
+        live_num_outer = bs.find(name='div', attrs={'class': 'liveNumOuter'})
+
+        # 일일확진자, 일일완치자
+        for li in live_num_outer.find(name='ul', attrs={'class': 'liveNum_today'}).find_all(name='li'):
+            title = li.select('span[class*=tit]')[0].text.strip()
+            count = int(re.sub(pattern='[^0-9]', repl='', string=li.select('span[class*=data]')[0].text))
+            corona19.extras[title] = count
+
+        # 확진환자, 완치, 치료중, 사망
+        for li in live_num_outer.find(name='ul', attrs={'class': 'liveNum'}).find_all(name='li'):
+            title = li.find(name='strong', attrs={'class': 'tit'}).text.strip()
+            count = int(re.sub(pattern='[^0-9]', repl='', string=li.find(name='span', attrs={'class', 'num'}).text))
+            if '확진환자' in title:
                 corona19.infected = count
-            elif '확진환자 격리해제수' == title:
+            elif '완치' in title:
                 corona19.released = count
-            elif '사망자수' == title:
+            elif '사망' in title:
                 corona19.dead = count
             else:
                 corona19.extras[title] = count
