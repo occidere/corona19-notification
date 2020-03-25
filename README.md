@@ -20,14 +20,24 @@
 <br>
 
 ### 알람 수단
-- Line (완성)
-- KakaoTalk (예정)
-- E-Mail (예정)
+#### Line Bot
+- Bot ID: `@674zzqqy`
+- Bot QR:
+
+![image](https://user-images.githubusercontent.com/20942871/77508112-3f61e800-6ead-11ea-844f-dc9da16db41b.png)
+
+<br>
+
+#### KakaoTalk (예정)
+
+<br>
+
+#### E-Mail (예정)
 
 <br>
 
 ## 예시
-![image](https://user-images.githubusercontent.com/20942871/75522755-108f5800-5a4e-11ea-856e-65d0a6691df2.png)
+![image](https://user-images.githubusercontent.com/20942871/77508001-fc077980-6eac-11ea-94d2-4d088c903256.png)
 
 
 <br>
