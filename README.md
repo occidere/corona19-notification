@@ -44,5 +44,5 @@
 
 ## 자료 제공 매체
 - NAVER: 코로나 검색
-- 보건복지부 코로나바이러스감염증-19 현황: http://ncov.mohw.go.kr/index_main.jsp
+- 보건복지부 코로나바이러스감염증-19 현황: http://ncov.mohw.go.kr
 - SBS 데이터 저널리즘 팀 마부작침: http://mabu.newscloud.sbs.co.kr/202002corona2/
