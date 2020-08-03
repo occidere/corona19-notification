@@ -23,9 +23,19 @@ class Corona19Status:
         self.dead_delta = 0
         self.extras: Dict[str, int] = {}
 
+    def set_count_by_title(self, title: str, count: int) -> None:
+        if title in ['확진자', '확진환자']:
+            self.infected = count
+        elif title in ['격리해제', '완치자']:
+            self.released = count
+        elif title in ['사망자']:
+            self.dead = count
+        else:
+            self.extras[title] = count
+
     # ex) 감염=5(+1),격리해제=3(+1),사망=2(-0),추가정보={'신천지관련': 2},출처=occidere news
     def __str__(self):
-        return '감염=%d({}%d),격리해제=%d({}%d),사망=%d({}%d)%s출처=%s'.format(
+        return '감염=%d({}%d),완치자=%d({}%d),사망=%d({}%d)%s출처=%s'.format(
             '+' if self.infected_delta > 0 else '-',
             '+' if self.released_delta > 0 else '-',
             '+' if self.dead_delta > 0 else '-'
@@ -81,14 +91,7 @@ def parse_sbs() -> [Corona19Status, None]:
         for cb in bs.find_all(name='div', attrs={'class', 'currentbox'}):
             title, count = list(filter(None, cb.getText().strip().replace(' ', '').split('\n')))
             count = int(re.sub(pattern='[^0-9]', repl='', string=count))
-            if '확진자' == title:
-                corona19.infected = count
-            elif '격리해제' == title:
-                corona19.released = count
-            elif '사망자' == title:
-                corona19.dead = count
-            else:
-                corona19.extras[title] = count
+            corona19.set_count_by_title(title, count)
     except Exception as e:
         print('[{}] {}'.format(datetime.now(), e))
         return None
@@ -114,14 +117,7 @@ def parse_mohw() -> [Corona19Status, None]:
         for li in live_num_outer.find(name='ul', attrs={'class': 'liveNum'}).find_all(name='li'):
             title = li.find(name='strong', attrs={'class': 'tit'}).text.strip()
             count = int(re.sub(pattern='[^0-9]', repl='', string=li.find(name='span', attrs={'class', 'num'}).text))
-            if '확진환자' in title:
-                corona19.infected = count
-            elif '완치' in title:
-                corona19.released = count
-            elif '사망' in title:
-                corona19.dead = count
-            else:
-                corona19.extras[title] = count
+            corona19.set_count_by_title(title, count)
     except Exception as e:
         print('[{}] {}'.format(datetime.now(), e))
         return None
