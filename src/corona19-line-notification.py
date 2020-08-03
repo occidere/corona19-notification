@@ -22,20 +22,23 @@ class Corona19Status:
         self.dead = 0
         self.dead_delta = 0
         self.extras: Dict[str, int] = {}
+        self.__infected_regex = re.compile('확진.?자')
+        self.__released_regex = re.compile('격리해제|완치.?')
+        self.__dead_regex = re.compile('사망.?')
 
     def set_count_by_title(self, title: str, count: int) -> None:
-        if title in ['확진자', '확진환자']:
+        if re.match(self.__infected_regex, title):
             self.infected = count
-        elif title in ['격리해제', '완치자']:
+        elif re.match(self.__released_regex, title):
             self.released = count
-        elif title in ['사망자']:
+        elif re.match(self.__dead_regex, title):
             self.dead = count
         else:
             self.extras[title] = count
 
     # ex) 감염=5(+1),격리해제=3(+1),사망=2(-0),추가정보={'신천지관련': 2},출처=occidere news
     def __str__(self):
-        return '감염=%d({}%d),완치자=%d({}%d),사망=%d({}%d)%s출처=%s'.format(
+        return '감염=%d({}%d),완치=%d({}%d),사망=%d({}%d)%s출처=%s'.format(
             '+' if self.infected_delta > 0 else '-',
             '+' if self.released_delta > 0 else '-',
             '+' if self.dead_delta > 0 else '-'
@@ -193,8 +196,8 @@ def apply_diff(corona19: Corona19Status, db_corona19: Corona19Status) -> bool:
 def build_message(status: Corona19Status) -> str:
     msg = '''[코로나-19 현황]
 - 확진자: {} 명 ({}{})
-- 격리해제: {} 명 ({}{})
-- 사망: {} 명 ({}{})
+- 완치자: {} 명 ({}{})
+- 사망자: {} 명 ({}{})
 '''.format(
         status.infected,
         '+' if status.infected_delta > 0 else '-',
