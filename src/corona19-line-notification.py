@@ -105,8 +105,8 @@ def parse_mohw() -> [Corona19Status, None]:
         live_num_outer = bs.find(name='div', attrs={'class': 'liveNumOuter'})
 
         # 일일확진자, 일일완치자
-        for li in live_num_outer.find(name='ul', attrs={'class': 'liveNum_today'}).find_all(name='li'):
-            title = li.select('span[class*=tit]')[0].text.strip()
+        for li in live_num_outer.find(name='div', attrs={'class': 'liveNum_today_new'}).find_all(name='li'):
+            title = li.select('span[class*=subtit]')[0].text.strip()
             count = int(re.sub(pattern='[^0-9]', repl='', string=li.select('span[class*=data]')[0].text))
             corona19.extras[title] = count
 
