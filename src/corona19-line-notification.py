@@ -134,18 +134,10 @@ def parse_naver() -> [Corona19Status, None]:
     corona19 = Corona19Status(source='NAVER')
 
     try:
-        graph_view = bs.find(name='div', attrs={'class': 'graph_view'})
-        for txt in graph_view.find_all(name='p', attrs={'class': 'txt'}):
-            title = txt.find(name='span', attrs={'class': 'txt_sort'}).text.strip()
-            count = int(re.sub(pattern='[^0-9]', repl='', string=txt.find(name='strong', attrs={'class': 'num'}).text))
-            if '확진환자' == title:
-                corona19.infected = count
-            elif '격리해제' == title:
-                corona19.released = count
-            elif '사망자' == title:
-                corona19.dead = count
-            else:
-                corona19.extras[title] = count
+        for info in bs.find(name='div', attrs={'class': 'status_info'}).find_all(name='li'):
+            title = info.find(name='strong', attrs={'class': 'info_title'}).text.strip()
+            count = int(re.sub(pattern='[^0-9]', repl='', string=info.find(name='p', attrs={'class': 'info_num'}).text))
+            corona19.set_count_by_title(title, count)
     except Exception as e:
         print('[{}] {}'.format(datetime.now(), e))
         return None
